@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sistema Escolar</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+{% if mostrar_login %}
+
+    <div class="login-box">
+
+        <p class="login-marca"><span>Sistema Escolar</span></p>
+
+        <h2>Login do Professor</h2>
+
+        {% with mensagens = get_flashed_messages() %}
+            {% for mensagem in mensagens %}
+                <div class="erro">{{ mensagem }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" action="/login">
+
+            <label>E-mail:</label>
+            <input
+                type="email"
+                name="email"
+                placeholder="Digite seu e-mail"
+                required
+            >
+
+            <label>Senha:</label>
+            <input
+                type="password"
+                name="senha"
+                placeholder="Digite sua senha"
+                required
+            >
+
+            <button type="submit">Entrar</button>
+
+        </form>
+
+        <a class="link-cadastro" href="/cadastro-professor">
+            Criar conta de professor
+        </a>
+
+    </div>
+
+{% elif mostrar_cadastro_professor %}
+
+    <div class="login-box">
+
+        <p class="login-marca"><span>Sistema Escolar</span></p>
+
+        <h2>Cadastro de Professor</h2>
+
+        {% with mensagens = get_flashed_messages() %}
+            {% for mensagem in mensagens %}
+                <div class="erro">{{ mensagem }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" action="/cadastro-professor">
+
+            <label>Nome:</label>
+            <input
+                type="text"
+                name="nome"
+                placeholder="Digite seu nome"
+                required
+            >
+
+            <label>E-mail:</label>
+            <input
+                type="email"
+                name="email"
+                placeholder="Digite seu e-mail"
+                required
+            >
+
+            <label>Senha:</label>
+            <input
+                type="password"
+                name="senha"
+                placeholder="Crie uma senha"
+                required
+            >
+
+            <label>Matéria que irá lecionar:</label>
+
+            <select name="materia" required>
+                <option value="">Selecione a matéria</option>
+
+                {% for materia_opcao in materias %}
+                    <option value="{{ materia_opcao }}">
+                        {{ materia_opcao }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+            <button type="submit">Criar conta</button>
+
+        </form>
+
+        <a class="link-cadastro" href="/login">
+            Voltar para o login
+        </a>
+
+    </div>
+
+{% else %}
+
+    <div class="layout">
+
+    <aside class="lateral">
+
+        <div class="marca">
+            <span class="marca-nome">Sistema Escolar</span>
+        </div>
+
+        <div class="perfil">
+            <strong>{{ professor_nome }}</strong>
+            <span>{{ materia }}</span>
+        </div>
+
+        <form
+            class="seletor-ano"
+            method="POST"
+            action="/mudar-ano"
+        >
+
+            <input
+                type="hidden"
+                name="voltar"
+                value="{{ request.path }}"
+            >
+
+            <input
+                type="hidden"
+                name="serie"
+                value="{{ request.args.get('serie', '') }}"
+            >
+
+            <label for="ano-letivo">Ano letivo</label>
+
+            <select
+                name="ano"
+                id="ano-letivo"
+                onchange="this.form.submit()"
+            >
+                {% for ano_opcao in anos_disponiveis %}
+                    <option
+                        value="{{ ano_opcao }}"
+                        {% if ano_opcao == ano_letivo %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ ano_opcao }}
+                    </option>
+                {% endfor %}
+            </select>
+
+        </form>
+
+        <nav>
+            <a href="/inicio" {% if aba == 'inicio' %}class="ativo"{% endif %}>Início</a>
+            <a href="/cadastrar" {% if aba == 'cadastrar' %}class="ativo"{% endif %}>Cadastrar aluno</a>
+            <a href="/listar" {% if aba == 'listar' %}class="ativo"{% endif %}>Listar alunos</a>
+            <a href="/chamada" {% if aba == 'chamada' %}class="ativo"{% endif %}>Lista de chamada</a>
+            <a href="/ranking" {% if aba == 'ranking' %}class="ativo"{% endif %}>Ranking</a>
+            <a href="/calendario" {% if aba == 'calendario' %}class="ativo"{% endif %}>Calendário</a>
+            <a href="/comunicacao" {% if aba == 'comunicacao' %}class="ativo"{% endif %}>Responsáveis</a>
+            <a href="/exportar-excel">Relatório Excel</a>
+            {% if perfil == 'administrador' %}
+                <a href="/auditoria" {% if aba == 'auditoria' %}class="ativo"{% endif %}>Auditoria</a>
+                <a href="/backup">Backup do banco</a>
+            {% endif %}
+            <button type="button" id="alternar-tema" class="botao-tema" aria-label="Alternar tema">Alternar tema claro/escuro</button>
+            <a href="/sair" class="sair">Sair</a>
+        </nav>
+
+    </aside>
+
+    <main class="container">
+
+        {% with mensagens = get_flashed_messages() %}
+            {% for mensagem in mensagens %}
+                <div class="mensagem">{{ mensagem }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        {% if aba == 'inicio' %}
+
+            <section class="boas-vindas">
+                <h2>Olá, {{ primeiro_nome }}</h2>
+                <p class="info">{{ data_extenso }}</p>
+            </section>
+
+            {% if geral.total == 0 %}
+
+                <section class="card">
+
+                    <h2>Nenhum aluno em {{ ano_letivo }}</h2>
+
+                    <div class="vazio">
+                        <p>
+                            Cadastre o primeiro aluno de {{ materia }}
+                            para ver o resumo da turma aqui.
+                        </p>
+                        <a class="botao-link principal" href="/cadastrar">
+                            Cadastrar aluno
+                        </a>
+                    </div>
+
+                </section>
+
+            {% else %}
+
+                <div class="indicadores">
+
+                    <div class="indicador">
+                        <span class="valor">{{ geral.total }}</span>
+                        <span class="rotulo">Alunos em {{ ano_letivo }}</span>
+                    </div>
+
+                    <div class="indicador">
+                        <span class="valor">
+                            {% if geral.media is not none %}
+                                {{ "%.1f"|format(geral.media) }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </span>
+                        <span class="rotulo">Média geral</span>
+                    </div>
+
+                    <div class="indicador verde">
+                        <span class="valor">{{ geral.aprovados }}</span>
+                        <span class="rotulo">Aprovados</span>
+                    </div>
+
+                    <div class="indicador vermelho">
+                        <span class="valor">{{ geral.reprovados }}</span>
+                        <span class="rotulo">Reprovados</span>
+                    </div>
+
+                    <div class="indicador amarelo">
+                        <span class="valor">{{ geral.em_risco }}</span>
+                        <span class="rotulo">
+                            Com ausência acima de {{ limite_ausencia }}%
+                        </span>
+                    </div>
+
+                </div>
+
+                <section class="card">
+
+                    <h2>Resumo por série</h2>
+
+                    {% for item in por_serie %}
+
+                        <div class="linha-serie">
+
+                            <span class="nome-serie">{{ item.serie }}º ano</span>
+
+                            <div
+                                class="barra"
+                                title="{{ item.aprovados }} aprovados, {{ item.andamento }} em andamento, {{ item.reprovados }} reprovados"
+                            >
+                                <div
+                                    class="parte-verde"
+                                    style="width: {{ (item.aprovados / item.total * 100)|round(1) }}%;"
+                                ></div>
+                                <div
+                                    class="parte-cinza"
+                                    style="width: {{ (item.andamento / item.total * 100)|round(1) }}%;"
+                                ></div>
+                                <div
+                                    class="parte-vermelha"
+                                    style="width: {{ (item.reprovados / item.total * 100)|round(1) }}%;"
+                                ></div>
+                            </div>
+
+                            <span class="contagem">
+                                {{ item.total }}
+                                {{ 'aluno' if item.total == 1 else 'alunos' }}
+                            </span>
+
+                            <span class="media-serie">
+                                Média
+                                {% if item.media is not none %}
+                                    {{ "%.1f"|format(item.media) }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </span>
+
+                        </div>
+
+                    {% endfor %}
+
+                    <div class="legenda">
+                        <span><i style="background: var(--verde);"></i>Aprovados</span>
+                        <span><i style="background: #b9c3d6;"></i>Em andamento</span>
+                        <span><i style="background: var(--vermelho);"></i>Reprovados</span>
+                    </div>
+
+                </section>
+
+                <section class="card">
+
+                    <h2>Alunos que precisam de atenção</h2>
+
+                    <p class="info">
+                        Aparecem aqui os alunos com média abaixo de 6
+                        ou ausência acima de {{ limite_ausencia }}%.
+                    </p>
+
+                    {% if atencao %}
+
+                        <ul class="lista-atencao">
+
+                            {% for item in atencao %}
+
+                                <li>
+
+                                    <div class="quem">
+                                        <strong>{{ item.nome }}</strong>
+                                        <span>{{ item.serie }}º ano</span>
+                                    </div>
+
+                                    <div class="motivos">
+                                        {% for motivo in item.motivos %}
+                                            <span class="selo selo-alerta">{{ motivo }}</span>
+                                        {% endfor %}
+                                    </div>
+
+                                </li>
+
+                            {% endfor %}
+
+                        </ul>
+
+                        {% if total_atencao > atencao|length %}
+                            <p class="info">
+                                E mais {{ total_atencao - atencao|length }}
+                                {{ 'aluno' if total_atencao - atencao|length == 1 else 'alunos' }}.
+                                Veja todos na tela Listar alunos.
+                            </p>
+                        {% endif %}
+
+                    {% else %}
+
+                        <div class="vazio">
+                            Nenhum aluno em alerta no momento.
+                        </div>
+
+                    {% endif %}
+
+                </section>
+
+            {% endif %}
+
+        {% elif aba == 'cadastrar' %}
+
+            <section class="card">
+
+                <h2>Cadastro de Aluno</h2>
+
+                <p class="info">
+                    Preencha os dados abaixo para cadastrar um novo aluno
+                    na matéria {{ materia }} no ano letivo de
+                    {{ ano_letivo }}.
+                </p>
+
+                <form method="POST" action="/cadastrar">
+
+                    <label>Nome do aluno:</label>
+
+                    <input
+                        type="text"
+                        name="nome"
+                        placeholder="Digite o nome do aluno"
+                        required
+                    >
+
+                    <label>Série:</label>
+
+                    <select name="serie" required>
+
+                        <option value="">Selecione a série</option>
+
+                        {% for i in range(1, 6) %}
+                            <option value="{{ i }}">
+                                {{ i }}º ano
+                            </option>
+                        {% endfor %}
+
+                    </select>
+
+                    <button type="submit">
+                        Cadastrar aluno
+                    </button>
+
+                </form>
+
+            </section>
+
+        {% elif aba == 'listar' %}
+
+            <section class="card">
+
+                <h2>Lista de Alunos</h2>
+
+                <form method="GET" action="/listar">
+
+                    <label>Selecione a série:</label>
+
+                    <select name="serie" required>
+
+                        <option value="">Selecione</option>
+
+                        {% for i in range(1, 6) %}
+                            <option
+                                value="{{ i }}"
+                                {% if serie_selecionada == i|string %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ i }}º ano
+                            </option>
+                        {% endfor %}
+
+                    </select>
+
+                    <button type="submit">Buscar alunos</button>
+
+                </form>
+
+            </section>
+
+            {% if serie_selecionada %}
+
+                <section class="card">
+
+                    <h2>
+                        Alunos do {{ serie_selecionada }}º ano
+                        — {{ ano_letivo }}
+                    </h2>
+
+                    <p class="info">
+                        As notas são salvas automaticamente quando você
+                        digita ou sai do campo.
+                    </p>
+
+                    {% if alunos %}
+
+                        <div class="faixa-turma">
+
+                            <span>
+                                <strong>{{ estatisticas.total }}</strong>
+                                {{ 'aluno' if estatisticas.total == 1 else 'alunos' }}
+                            </span>
+
+                            <span>
+                                Média da turma:
+                                <strong>
+                                    {% if estatisticas.media is not none %}
+                                        {{ "%.1f"|format(estatisticas.media) }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </strong>
+                            </span>
+
+                            <span class="selo selo-aprovado">
+                                {{ estatisticas.aprovados }} aprovados
+                            </span>
+
+                            <span class="selo selo-reprovado">
+                                {{ estatisticas.reprovados }} reprovados
+                            </span>
+
+                            {% if estatisticas.em_risco %}
+                                <span class="selo selo-alerta">
+                                    {{ estatisticas.em_risco }}
+                                    com ausência acima de {{ limite_ausencia }}%
+                                </span>
+                            {% endif %}
+
+                        </div>
+
+                        <div class="ferramentas">
+
+                            <input
+                                type="search"
+                                id="busca-aluno"
+                                placeholder="Buscar aluno pelo nome"
+                                autocomplete="off"
+                            >
+
+                            <a class="botao-link" href="/exportar">Baixar CSV</a>
+                            <a class="botao-link" href="/exportar-excel">Baixar Excel</a>
+
+                        </div>
+
+                        <p
+                            id="sem-resultado"
+                            class="info"
+                            hidden
+                        >
+                            Nenhum aluno encontrado com esse nome.
+                        </p>
+
+                        <script>
+
+                            (function () {
+
+                                var busca = document.getElementById("busca-aluno");
+
+                                function limpar(texto) {
+                                    return texto
+                                        .toLowerCase()
+                                        .normalize("NFD")
+                                        .replace(/[^a-z0-9 ]/g, "");
+                                }
+
+                                busca.addEventListener("input", function () {
+
+                                    var termo = limpar(busca.value.trim());
+                                    var cartoes = document.querySelectorAll(".aluno");
+                                    var encontrados = 0;
+
+                                    cartoes.forEach(function (cartao) {
+
+                                        var nome = limpar(cartao.dataset.nome);
+                                        var aparece = nome.indexOf(termo) !== -1;
+
+                                        cartao.hidden = !aparece;
+
+                                        if (aparece) {
+                                            encontrados++;
+                                        }
+                                    });
+
+                                    document.getElementById("sem-resultado").hidden =
+                                        encontrados > 0;
+                                });
+
+                            })();
+
+                        </script>
+
+                        {% for aluno in alunos %}
+
+                            {% set media, situacao =
+                                calcular_situacao(aluno) %}
+
+                            {% set freq = frequencia[aluno.id] %}
+
+                            <div class="aluno" data-nome="{{ aluno.nome|lower }}">
+
+                                <div class="aluno-topo">
+
+                                    <div class="aluno-nome">
+
+                                        <span class="avatar" aria-hidden="true">
+                                            {% set partes_nome = aluno.nome.split() %}
+                                            {{ (partes_nome[0][:1] ~ (partes_nome[-1][:1] if partes_nome|length > 1 else ''))|upper }}
+                                        </span>
+
+                                        <h3>{{ aluno.nome }}</h3>
+
+                                        <button
+                                            type="button"
+                                            class="botao-excluir botao-pequeno"
+                                            data-id="{{ aluno.id }}"
+                                            data-nome="{{ aluno.nome }}"
+                                            onclick="excluirAluno(this)"
+                                            title="Excluir aluno"
+                                        >
+                                            Excluir
+                                        </button>
+
+                                    </div>
+
+                                    <div class="resumo">
+
+                                        <span>
+                                            <strong>Média:</strong>
+                                            <span id="media-{{ aluno.id }}">
+                                                {% if media is not none %}
+                                                    {{ "%.2f"|format(media) }}
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </span>
+                                        </span>
+
+                                        <span>
+                                            <strong>Situação:</strong>
+                                            <span
+                                                class="situacao{% if situacao == 'Aprovado' %} selo selo-aprovado{% elif situacao == 'Reprovado' %} selo selo-reprovado{% endif %}"
+                                                id="situacao-{{ aluno.id }}"
+                                            >
+                                                {{ situacao }}
+                                            </span>
+                                        </span>
+
+                                        <span>
+                                            <strong>Faltas:</strong>
+                                            {{ freq.faltas }}
+                                            <span class="info-pequena">
+                                                (de {{ freq.total }}
+                                                {{ 'chamada' if freq.total == 1 else 'chamadas' }})
+                                            </span>
+                                        </span>
+
+                                        <span class="{% if freq.total > 0 and freq.percentual > limite_ausencia %}ausencia-alta{% endif %}">
+                                            <strong>Ausência:</strong>
+                                            {{ "%.1f"|format(freq.percentual) }}%
+                                            {% if freq.total > 0 and freq.percentual > limite_ausencia %}
+                                                <span class="selo selo-alerta">Atenção</span>
+                                            {% endif %}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                                <form
+                                    class="form-notas"
+                                    data-id="{{ aluno.id }}"
+                                    method="POST"
+                                    action="/editar/{{ aluno.id }}"
+                                >
+
+                                    <div class="notas">
+
+                                        <div class="nota-item">
+                                            <label>1º Bim.</label>
+                                            <input
+                                                class="campo-nota"
+                                                type="number"
+                                                name="nota1"
+                                                min="0"
+                                                max="10"
+                                                step="0.1"
+                                                value="{{ aluno.nota1 if aluno.nota1 is not none else '' }}"
+                                            >
+                                        </div>
+
+                                        <div class="nota-item">
+                                            <label>2º Bim.</label>
+                                            <input
+                                                class="campo-nota"
+                                                type="number"
+                                                name="nota2"
+                                                min="0"
+                                                max="10"
+                                                step="0.1"
+                                                value="{{ aluno.nota2 if aluno.nota2 is not none else '' }}"
+                                            >
+                                        </div>
+
+                                        <div class="nota-item">
+                                            <label>3º Bim.</label>
+                                            <input
+                                                class="campo-nota"
+                                                type="number"
+                                                name="nota3"
+                                                min="0"
+                                                max="10"
+                                                step="0.1"
+                                                value="{{ aluno.nota3 if aluno.nota3 is not none else '' }}"
+                                            >
+                                        </div>
+
+                                        <div class="nota-item">
+                                            <label>4º Bim.</label>
+                                            <input
+                                                class="campo-nota"
+                                                type="number"
+                                                name="nota4"
+                                                min="0"
+                                                max="10"
+                                                step="0.1"
+                                                value="{{ aluno.nota4 if aluno.nota4 is not none else '' }}"
+                                            >
+                                        </div>
+
+                                        <div
+                                            class="status-salvamento salvo"
+                                            id="status-{{ aluno.id }}"
+                                        >
+                                            Salvo ✓
+                                        </div>
+
+                                    </div>
+
+                                </form>
+
+                                <p><a class="botao-link botao-pequeno" href="{{ url_for('boletim_pdf', aluno_id=aluno.id) }}">Gerar boletim PDF</a></p>
+                        <details class="dados-aluno">
+
+                                    <summary>
+                                        Dados do aluno
+                                        {% if aluno.observacoes %}
+                                            <span class="tem-obs">com observação</span>
+                                        {% endif %}
+                                    </summary>
+
+                                    <form
+                                        class="form-dados"
+                                        method="POST"
+                                        action="/atualizar-aluno/{{ aluno.id }}"
+                                    >
+
+                                        <div class="grade-dados">
+
+                                            <div>
+                                                <label>Nome</label>
+                                                <input
+                                                    type="text"
+                                                    name="nome"
+                                                    value="{{ aluno.nome }}"
+                                                    required
+                                                >
+                                            </div>
+
+                                            <div>
+                                                <label>Série</label>
+                                                <select name="serie">
+                                                    {% for i in range(1, 6) %}
+                                                        <option
+                                                            value="{{ i }}"
+                                                            {% if aluno.serie == i %}selected{% endif %}
+                                                        >
+                                                            {{ i }}º ano
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label>Responsável</label>
+                                                <input
+                                                    type="text"
+                                                    name="responsavel"
+                                                    value="{{ aluno.responsavel or '' }}"
+                                                    maxlength="120"
+                                                >
+                                            </div>
+
+                                            <div>
+                                                <label>Telefone do responsável</label>
+                                                <input
+                                                    type="tel"
+                                                    name="telefone"
+                                                    value="{{ aluno.telefone or '' }}"
+                                                    maxlength="30"
+                                                    placeholder="(00) 00000-0000"
+                                                >
+                                            </div>
+
+                                        </div>
+
+                                        <label>Observações</label>
+
+                                        <textarea
+                                            name="observacoes"
+                                            rows="2"
+                                            maxlength="500"
+                                            placeholder="Ex.: precisa de reforço em leitura"
+                                        >{{ aluno.observacoes or '' }}</textarea>
+
+                                        <button type="submit" class="botao-pequeno">
+                                            Salvar dados
+                                        </button>
+
+                                    </form>
+
+                                </details>
+
+                            </div>
+
+                        {% endfor %}
+
+                        <script>
+
+                            (function () {
+
+                                var formularios = document.querySelectorAll(".form-notas");
+                                var funcoesPendentes = [];
+
+                                formularios.forEach(function (form) {
+
+                                    var id = form.dataset.id;
+                                    var status = document.getElementById("status-" + id);
+                                    var campos = form.querySelectorAll(".campo-nota");
+
+                                    var temporizador = null;
+                                    var pendente = false;
+                                    var numeroEnvio = 0;
+
+                                    function mostrar(texto, classe) {
+                                        status.textContent = texto;
+                                        status.className = "status-salvamento " + classe;
+                                    }
+
+                                    function notasValidas() {
+                                        for (var i = 0; i < campos.length; i++) {
+
+                                            var valor = campos[i].value.replace(",", ".");
+
+                                            if (valor === "") {
+                                                continue;
+                                            }
+
+                                            var numero = Number(valor);
+
+                                            if (isNaN(numero) || numero < 0 || numero > 10) {
+                                                return false;
+                                            }
+                                        }
+
+                                        return true;
+                                    }
+
+                                    function salvar() {
+
+                                        clearTimeout(temporizador);
+                                        temporizador = null;
+
+                                        if (!pendente) {
+                                            return;
+                                        }
+
+                                        if (!notasValidas()) {
+                                            mostrar("Use notas de 0 a 10", "erro-status");
+                                            return;
+                                        }
+
+                                        pendente = false;
+                                        numeroEnvio++;
+
+                                        var meuEnvio = numeroEnvio;
+
+                                        mostrar("Salvando...", "salvando");
+
+                                        fetch("/salvar-notas/" + id, {
+                                            method: "POST",
+                                            body: new FormData(form),
+                                            keepalive: true
+                                        })
+                                        .then(function (resposta) {
+
+                                            if (resposta.redirected) {
+                                                throw new Error("sessao");
+                                            }
+
+                                            return resposta.json();
+                                        })
+                                        .then(function (dados) {
+
+                                            // Ignora respostas antigas se houve
+                                            // uma alteração mais recente.
+                                            if (meuEnvio !== numeroEnvio) {
+                                                return;
+                                            }
+
+                                            if (!dados.ok) {
+                                                pendente = true;
+                                                mostrar(dados.erro, "erro-status");
+                                                return;
+                                            }
+
+                                            if (!pendente) {
+                                                mostrar("Salvo ✓", "salvo");
+                                            }
+
+                                            var campoMedia = document.getElementById("media-" + id);
+                                            var campoSituacao = document.getElementById("situacao-" + id);
+
+                                            if (dados.media === null) {
+                                                campoMedia.textContent = "—";
+                                            } else {
+                                                campoMedia.textContent = dados.media.toFixed(2);
+                                            }
+
+                                            campoSituacao.textContent = dados.situacao;
+
+                                            if (dados.situacao === "Aprovado") {
+                                                campoSituacao.className = "situacao selo selo-aprovado";
+                                            } else if (dados.situacao === "Reprovado") {
+                                                campoSituacao.className = "situacao selo selo-reprovado";
+                                            } else {
+                                                campoSituacao.className = "situacao";
+                                            }
+                                        })
+                                        .catch(function (erro) {
+
+                                            pendente = true;
+
+                                            if (erro.message === "sessao") {
+                                                mostrar("Sessão expirada. Entre de novo.", "erro-status");
+                                            } else {
+                                                mostrar("Erro ao salvar", "erro-status");
+                                            }
+                                        });
+                                    }
+
+                                    campos.forEach(function (campo) {
+
+                                        campo.addEventListener("input", function () {
+
+                                            pendente = true;
+                                            mostrar("Alterado...", "pendente");
+
+                                            clearTimeout(temporizador);
+                                            temporizador = setTimeout(salvar, 700);
+                                        });
+
+                                        campo.addEventListener("change", salvar);
+                                    });
+
+                                    form.addEventListener("submit", function (evento) {
+                                        evento.preventDefault();
+                                        pendente = true;
+                                        salvar();
+                                    });
+
+                                    funcoesPendentes.push(function () {
+                                        if (pendente) {
+                                            salvar();
+                                        }
+                                    });
+                                });
+
+                                // Garante o salvamento se a pessoa sair da página
+                                // logo depois de digitar.
+                                window.addEventListener("pagehide", function () {
+                                    funcoesPendentes.forEach(function (funcao) {
+                                        funcao();
+                                    });
+                                });
+
+                            })();
+
+                        </script>
+
+                    {% else %}
+
+                        <p>Nenhum aluno cadastrado nesta série em {{ ano_letivo }}.</p>
+
+                    {% endif %}
+
+                </section>
+
+            {% endif %}
+
+        {% elif aba == 'chamada' %}
+
+            <section class="card">
+
+                <h2>Lista de Chamada</h2>
+
+                <form method="GET" action="/chamada">
+
+                    <label>Selecione a série:</label>
+
+                    <select name="serie" required>
+
+                        <option value="">Selecione a série</option>
+
+                        {% for i in range(1, 6) %}
+                            <option
+                                value="{{ i }}"
+                                {% if serie_selecionada == i|string %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ i }}º ano
+                            </option>
+                        {% endfor %}
+
+                    </select>
+
+                    <label>Data da chamada:</label>
+
+                    <input
+                        type="date"
+                        name="data"
+                        value="{{ data_selecionada }}"
+                        required
+                    >
+
+                    <button type="submit">Carregar chamada</button>
+
+                </form>
+
+            </section>
+
+            {% if serie_selecionada %}
+
+                <section class="card">
+
+                    <h2>
+                        Chamada do {{ serie_selecionada }}º ano
+                        — {{ ano_letivo }}
+                    </h2>
+
+                    <p>
+                        <strong>Data:</strong> {{ data_selecionada }}
+                    </p>
+
+                    {% if alunos %}
+
+                        <form method="POST" action="/chamada">
+
+                            <input
+                                type="hidden"
+                                name="serie"
+                                value="{{ serie_selecionada }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="data"
+                                value="{{ data_selecionada }}"
+                            >
+
+                            <div class="ferramentas-chamada">
+
+                                <span
+                                    class="contador-presentes"
+                                    id="contador-presentes"
+                                    aria-live="polite"
+                                ></span>
+
+                                <button
+                                    type="button"
+                                    class="botao-secundario botao-pequeno"
+                                    onclick="marcarTodos(true)"
+                                >
+                                    Marcar todos
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="botao-secundario botao-pequeno"
+                                    onclick="marcarTodos(false)"
+                                >
+                                    Desmarcar todos
+                                </button>
+
+                            </div>
+
+                            {% for aluno in alunos %}
+
+                                <div class="presenca">
+
+                                    <input
+                                        type="checkbox"
+                                        name="presente"
+                                        value="{{ aluno.id }}"
+                                        id="aluno{{ aluno.id }}"
+                                        {% if aluno.id in presentes %}
+                                            checked
+                                        {% endif %}
+                                    >
+
+                                    <label for="aluno{{ aluno.id }}">
+                                        {{ aluno.nome }}
+                                    </label>
+
+                                    <button
+                                        type="button"
+                                        class="botao-excluir botao-pequeno"
+                                        data-id="{{ aluno.id }}"
+                                        data-nome="{{ aluno.nome }}"
+                                        onclick="excluirAluno(this)"
+                                        title="Excluir aluno"
+                                    >
+                                        Excluir
+                                    </button>
+
+                                </div>
+
+                            {% endfor %}
+
+                            <p class="info">
+                                Os alunos marcados serão registrados
+                                como presentes. Desmarque quem faltou.
+                            </p>
+
+                            <button type="submit">
+                                Salvar chamada
+                            </button>
+
+                        </form>
+
+                    {% else %}
+
+                        <p>Nenhum aluno cadastrado nesta série em {{ ano_letivo }}.</p>
+
+                    {% endif %}
+
+                </section>
+
+            {% endif %}
+
+        {% elif aba == 'ranking' %}
+
+            <section class="card">
+
+                <h2>Ranking de Alunos — {{ ano_letivo }}</h2>
+
+                <p class="info">
+                    Ranking da matéria {{ materia }},
+                    considerando as quatro notas bimestrais.
+                </p>
+
+                {% if ranking %}
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Posição</th>
+                                <th>Aluno</th>
+                                <th>Série</th>
+                                <th>Média</th>
+                                <th>Situação</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for aluno in ranking %}
+
+                                <tr>
+                                    <td>{{ loop.index }}º</td>
+                                    <td>{{ aluno.nome }}</td>
+                                    <td>{{ aluno.serie }}º ano</td>
+                                    <td>
+                                        {{ "%.2f"|format(aluno.media) }}
+                                    </td>
+                                    <td>
+                                        <span
+                                            class="selo{% if aluno.situacao == 'Aprovado' %} selo-aprovado{% elif aluno.situacao == 'Reprovado' %} selo-reprovado{% endif %}"
+                                        >
+                                            {{ aluno.situacao }}
+                                        </span>
+                                    </td>
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                {% else %}
+
+                    <p>
+                        Ainda não existem alunos com as quatro notas
+                        preenchidas para formar o ranking.
+                    </p>
+
+                {% endif %}
+
+            </section>
+
+        {% elif aba == 'calendario' %}
+            <section class="card">
+                <h2>Calendário escolar — {{ ano_letivo }}</h2>
+                <p class="info">Organize provas, reuniões, feriados e atividades da escola.</p>
+                <form method="POST" action="/calendario" class="form-grade">
+                    <label>Título do evento</label><input name="titulo" required maxlength="120" placeholder="Ex.: Prova de Matemática">
+                    <label>Data</label><input type="date" name="data" required>
+                    <label>Tipo</label><select name="tipo"><option>Prova</option><option>Reunião</option><option>Feriado</option><option>Evento</option><option>Entrega de trabalho</option></select>
+                    <label>Descrição</label><textarea name="descricao" rows="3" placeholder="Detalhes do evento"></textarea>
+                    <button type="submit">Adicionar evento</button>
+                </form>
+            </section>
+            <section class="card"><h2>Próximos eventos</h2>
+                {% if eventos %}<div class="tabela-responsiva"><table><thead><tr><th>Data</th><th>Evento</th><th>Tipo</th><th>Descrição</th><th>Ação</th></tr></thead><tbody>
+                {% for evento in eventos %}<tr><td>{{ evento.data }}</td><td>{{ evento.titulo }}</td><td>{{ evento.tipo }}</td><td>{{ evento.descricao or '—' }}</td><td><form method="POST" action="{{ url_for('excluir_evento', evento_id=evento.id) }}"><button class="botao-excluir botao-pequeno" type="submit">Excluir</button></form></td></tr>{% endfor %}
+                </tbody></table></div>{% else %}<div class="vazio">Nenhum evento cadastrado para este ano.</div>{% endif %}
+            </section>
+
+        {% elif aba == 'comunicacao' %}
+            <section class="card"><h2>Comunicação com responsáveis</h2><p class="info">Registre contatos e acompanhe o histórico. O sistema mantém o registro, mas não envia mensagens automaticamente.</p>
+                <form method="POST" action="/comunicacao">
+                    <label>Aluno</label><select name="aluno_id" required><option value="">Selecione o aluno</option>{% for aluno in alunos %}<option value="{{ aluno.id }}">{{ aluno.nome }} — {{ aluno.serie }}º ano{% if aluno.responsavel %} ({{ aluno.responsavel }}){% endif %}</option>{% endfor %}</select>
+                    <label>Assunto</label><input name="assunto" maxlength="120" required placeholder="Ex.: Frequência escolar">
+                    <label>Canal utilizado</label><select name="canal"><option>Telefone</option><option>E-mail</option><option>Presencial</option><option>Aplicativo externo</option></select>
+                    <label>Mensagem / resumo do contato</label><textarea name="mensagem" rows="4" maxlength="2000" required></textarea>
+                    <button type="submit">Registrar contato</button>
+                </form>
+            </section>
+            <section class="card"><h2>Histórico de contatos</h2>{% if historico %}<div class="tabela-responsiva"><table><thead><tr><th>Data</th><th>Aluno</th><th>Assunto</th><th>Canal</th><th>Registro</th></tr></thead><tbody>{% for item in historico %}<tr><td>{{ item.data_envio }}</td><td>{{ item.aluno_nome or 'Cadastro removido' }}</td><td>{{ item.assunto }}</td><td>{{ item.canal }}</td><td>{{ item.mensagem }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="vazio">Nenhum contato registrado.</div>{% endif %}</section>
+
+        {% elif aba == 'auditoria' %}
+            <section class="card"><h2>Registro de atividades</h2><p class="info">Últimas 200 ações registradas no sistema.</p>{% if registros %}<div class="tabela-responsiva"><table><thead><tr><th>Data e hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead><tbody>{% for r in registros %}<tr><td>{{ r.criado_em }}</td><td>{{ r.nome or 'Usuário removido' }}</td><td>{{ r.acao }}</td><td>{{ r.detalhes }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="vazio">Ainda não há atividades registradas.</div>{% endif %}</section>
+
+        {% endif %}
+
+        {% if aba in ['listar', 'chamada'] and alunos %}
+
+            <!-- Formulário usado pelos botões de excluir aluno -->
+            <form
+                id="form-excluir"
+                method="POST"
+                style="display: none;"
+            >
+
+                <input type="hidden" name="origem" value="{{ aba }}">
+                <input type="hidden" name="serie" value="{{ serie_selecionada }}">
+                <input type="hidden" name="data" value="{{ data_selecionada|default('') }}">
+
+            </form>
+
+            <script>
+
+                function excluirAluno(botao) {
+
+                    var nome = botao.dataset.nome;
+
+                    var mensagem =
+                        "Excluir o aluno " + nome + "? " +
+                        "As notas e as faltas dele também serão apagadas " +
+                        "e isso não pode ser desfeito.";
+
+                    if (!confirm(mensagem)) {
+                        return;
+                    }
+
+                    var formulario = document.getElementById("form-excluir");
+
+                    formulario.action = "/excluir/" + botao.dataset.id;
+                    formulario.submit();
+                }
+
+                function atualizarContador() {
+
+                    var contador = document.getElementById("contador-presentes");
+
+                    if (!contador) {
+                        return;
+                    }
+
+                    var caixas = document.querySelectorAll(".presenca input[type=checkbox]");
+                    var marcadas = document.querySelectorAll(".presenca input[type=checkbox]:checked");
+
+                    contador.textContent =
+                        marcadas.length + " presentes de " + caixas.length;
+                }
+
+                function marcarTodos(valor) {
+
+                    document
+                        .querySelectorAll(".presenca input[type=checkbox]")
+                        .forEach(function (caixa) {
+                            caixa.checked = valor;
+                        });
+
+                    atualizarContador();
+                }
+
+                document.addEventListener("change", function (evento) {
+
+                    if (evento.target.matches(".presenca input")) {
+                        atualizarContador();
+                    }
+                });
+
+                atualizarContador();
+
+            </script>
+
+        {% endif %}
+
+    </main>
+
+    </div>
+
+{% endif %}
+
+<script>
+(function () {
+    const temaSalvo = localStorage.getItem('tema-escolar');
+    if (temaSalvo === 'escuro') document.documentElement.setAttribute('data-tema', 'escuro');
+    const botao = document.getElementById('alternar-tema');
+    if (botao) botao.addEventListener('click', function () {
+        const escuro = document.documentElement.getAttribute('data-tema') !== 'escuro';
+        if (escuro) {
+            document.documentElement.setAttribute('data-tema', 'escuro');
+            localStorage.setItem('tema-escolar', 'escuro');
+        } else {
+            document.documentElement.removeAttribute('data-tema');
+            localStorage.setItem('tema-escolar', 'claro');
+        }
+    });
+})();
+</script>
+</body>
+</html>
